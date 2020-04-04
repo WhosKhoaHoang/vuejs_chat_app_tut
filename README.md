@@ -1,4 +1,8 @@
 # chat_app
+Following along in a chat app tutorial using Vue.js and Firebase
+
+# Link to Tutorial
+https://www.youtube.com/watch?v=ifOzAyR1cG4
 
 ## Project setup
 ```
