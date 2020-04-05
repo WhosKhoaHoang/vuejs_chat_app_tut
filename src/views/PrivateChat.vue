@@ -93,12 +93,15 @@
             </div>
             <div class="mesgs">
               <div class="msg_history">
+                <!-- TODO: Modify and verify satisfactory layout of sent and received messages -->
+                <!--       - Currently, if the same user sends multiple messages, the messages
+                             appears from right to left
+                           - Should include a timestamp along with message.author -->
                 <div v-for="message in messages" class="incoming_msg">
-                  <div class="incoming_msg_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
-                  <div class="received_msg">
+                  <div :class="[message.author===authUser.displayName ? 'sent_msg':'received_msg']">
                     <div class="received_withd_msg">
                       <p>{{ message.message }}</p>
-                      <span class="time_date"> 11:01 AM    |    June 9</span></div>
+                      <span class="time_date"> {{ message.author }} </span></div>
                   </div>
                 </div>
               </div>
@@ -117,27 +120,36 @@
 </template>
 
 <script>
+import firebase from "firebase"
 
 export default {
   name: "PrivateChat",
 
   data() {
     return {
-      message: null,  // Specified by v-mode1
-      messages: []
+      message: null,  // Specified by v-mode1 tag attribute
+      messages: [],
+      authUser:  {}
     }
   },
 
   methods: {
+    scrollToBottom() {
+      // Call this method whenever you need the scrollbar
+      // for the message window to scroll down automatically
+      let box = document.querySelector(".msg_history");
+      box.scrollTop = box.scrollHeight;
+    },
+
     saveMessage() {
       // Save to Firestore
       db.collection("chat").add({
         message: this.message,
+        author: this.authUser.displayName,
         createdAt: new Date(),
-
-      }).then(function(docRef) {
-        console.log("Document written with ID: ", docRef.id);
-      }).catch(function(error) {
+      }).then(() => {
+        this.scrollToBottom();
+      }).catch((error) => {
         console.log("Error adding document: ", error);
       });
 
@@ -148,20 +160,52 @@ export default {
     fetchMessages() {
       // onSnapshot() makes real-time display of messages possible. This
       // method call seems to contain the call to get(), which gets the
-      // message data from our "chat" DB.
+      // message data from our "chat" DB in Firebase.
       db.collection("chat").orderBy("createdAt").onSnapshot((querySnapshot) => {
         let allMessages = [];
         querySnapshot.forEach((doc) => {
           allMessages.push(doc.data());
         });
+        // NOTE: Generally speaking, it's probably not a good idea
+        //       to push ALL the messages into the message window,
+        //       for it could be quite an expensive operation.
 
         this.messages = allMessages;
+
+        setTimeout(() => {
+          this.scrollToBottom();
+        }, 1000);
+        // Give messages 1 second to render before calling
+        // scrollToBottom. scrollToBottom won't work if
+        // messages haven't already been rendered.
+        // - This probably isn't the most robust
+        //   way of doing things...
       });
     }
   },
 
   created() {
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        this.authUser = user;
+      } else {
+        this.authUser = {};
+      }
+    });
     this.fetchMessages();
+  },
+
+  beforeRouteEnter(to, from, next) {
+    // vm is like "this"
+    next((vm) => {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          next();
+        } else {
+          vm.$router.push("/login");
+        }
+      });
+    });
   }
 }
 </script>
