@@ -134,7 +134,7 @@
               </div>
               <div class="type_msg">
                 <div class="input_msg_write">
-                  <input type="text" class="write_msg" placeholder="Type a message" />
+                  <input @keyup.enter="saveMessage" v-model="message" type="text" class="write_msg" placeholder="Type a message" />
                   <button class="msg_send_btn" type="button"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>
                 </div>
               </div>
@@ -149,7 +149,23 @@
 <script>
 
 export default {
-  components: {
+  data() {
+    return {
+      message: null  // Specified by v-mode1
+    }
+  },
+
+  methods: {
+    saveMessage() {
+      // Save to Firestore
+      db.collection("chat").add({
+        message: this.message
+      }).then(function(docRef) {
+        console.log("Document written with ID: ", docRef.id);
+      }).catch(function(error) {
+        console.log("Error adding document: ", error);
+      });
+    }
   }
 }
 </script>
